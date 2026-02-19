@@ -18,7 +18,9 @@ Liar's Dice is a classic dice bluffing game. Each player has five 6-sided dice a
 - When challenged, all dice are revealed:
   - If actual count >= bid → bidder wins (challenger loses)
   - If actual count < bid → challenger wins (bidder loses)
-- The loser loses one die; the game ends when a player has no dice left
+- Dice count is always fixed at 5 per player throughout the match
+- The match lasts 5 rounds; each round winner gets 1 win
+- After round 5, the player with more round wins is the match winner
 
 ## Tech Stack
 
@@ -35,7 +37,7 @@ Liar's Dice is a classic dice bluffing game. Each player has five 6-sided dice a
 │   │   ├── DiceView.tsx    # Dice visualization
 │   │   ├── BidPanel.tsx    # Bid controls
 │   │   ├── BidHistory.tsx  # Bid history
-│   │   ├── ScoreBoard.tsx  # Remaining dice
+│   │   ├── ScoreBoard.tsx  # Round progress and match score
 │   │   └── ResultModal.tsx # Result modal
 │   ├── api.ts              # Tauri API wrapper
 │   ├── types.ts            # TypeScript types

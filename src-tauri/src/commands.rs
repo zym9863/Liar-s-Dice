@@ -1,7 +1,7 @@
-use std::sync::Mutex;
-use tauri::State;
 use crate::game::engine::GameEngine;
 use crate::game::types::GameView;
+use std::sync::Mutex;
+use tauri::State;
 
 pub struct AppState {
     pub engine: Mutex<GameEngine>,

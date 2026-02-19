@@ -77,7 +77,11 @@ impl AiEngine {
                 let prob = self.calculate_probability(state, &bid);
                 if prob >= 0.45 {
                     // 倾向于叫自己有的点数
-                    let bonus = if my_count > 0 { my_count as f64 * 0.1 } else { 0.0 };
+                    let bonus = if my_count > 0 {
+                        my_count as f64 * 0.1
+                    } else {
+                        0.0
+                    };
                     candidates.push((bid, prob + bonus));
                 }
             }

@@ -5,11 +5,10 @@ export interface Bid {
 
 export type Player = "Human" | "AI";
 
-export type Action =
-  | { Bid: Bid }
-  | "Challenge";
+export type Action = { Bid: Bid } | "Challenge";
 
 export interface RoundResult {
+  round: number;
   winner: Player;
   loser: Player;
   human_dice: number[];
@@ -31,4 +30,9 @@ export interface GameView {
   human_dice_count: number;
   bid_history: [Player, Action][];
   current_bid: Bid | null;
+  current_round: number;
+  max_rounds: number;
+  human_wins: number;
+  ai_wins: number;
+  last_round_result: RoundResult | null;
 }

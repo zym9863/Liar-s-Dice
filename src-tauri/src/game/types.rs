@@ -1,41 +1,39 @@
-use serde::{Deserialize, Serialize};
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 
-/// 一次叫数
+pub const MAX_DICE_PER_PLAYER: u32 = 5;
+pub const MAX_ROUNDS: u32 = 5;
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Bid {
-    pub count: u32,    // 数量：至少有几个
-    pub face: u32,     // 点数：1-6
+    pub count: u32,
+    pub face: u32,
 }
 
 impl Bid {
-    /// 判断 new_bid 是否是合法的加注（数量更大，或数量相同但点数更大）
     pub fn is_valid_raise(&self, new_bid: &Bid) -> bool {
         if new_bid.face < 1 || new_bid.face > 6 || new_bid.count < 1 {
             return false;
         }
-        new_bid.count > self.count
-            || (new_bid.count == self.count && new_bid.face > self.face)
+        new_bid.count > self.count || (new_bid.count == self.count && new_bid.face > self.face)
     }
 }
 
-/// 玩家身份
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum Player {
     Human,
     AI,
 }
 
-/// 一个回合中的动作
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Action {
     Bid(Bid),
     Challenge,
 }
 
-/// 回合结果
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RoundResult {
+    pub round: u32,
     pub winner: Player,
     pub loser: Player,
     pub human_dice: Vec<u32>,
@@ -44,20 +42,14 @@ pub struct RoundResult {
     pub actual_count: u32,
 }
 
-/// 游戏阶段
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum GamePhase {
-    /// 等待玩家操作（叫数或开）
     PlayerTurn,
-    /// AI 回合（前端等待 AI 响应）
     AITurn,
-    /// 回合结束，展示结果
     RoundOver(RoundResult),
-    /// 游戏结束
     GameOver { winner: Player },
 }
 
-/// 前端可见的游戏状态
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameView {
     pub phase: GamePhase,
@@ -66,9 +58,13 @@ pub struct GameView {
     pub human_dice_count: u32,
     pub bid_history: Vec<(Player, Action)>,
     pub current_bid: Option<Bid>,
+    pub current_round: u32,
+    pub max_rounds: u32,
+    pub human_wins: u32,
+    pub ai_wins: u32,
+    pub last_round_result: Option<RoundResult>,
 }
 
-/// 完整游戏状态（后端内部使用）
 #[derive(Debug, Clone)]
 pub struct GameState {
     pub human_dice: Vec<u32>,
@@ -79,6 +75,11 @@ pub struct GameState {
     pub bid_history: Vec<(Player, Action)>,
     pub current_bid: Option<Bid>,
     pub current_turn: Player,
+    pub current_round: u32,
+    pub max_rounds: u32,
+    pub human_wins: u32,
+    pub ai_wins: u32,
+    pub last_round_result: Option<RoundResult>,
 }
 
 impl GameState {
@@ -86,12 +87,17 @@ impl GameState {
         let mut state = GameState {
             human_dice: Vec::new(),
             ai_dice: Vec::new(),
-            human_dice_count: 5,
-            ai_dice_count: 5,
+            human_dice_count: MAX_DICE_PER_PLAYER,
+            ai_dice_count: MAX_DICE_PER_PLAYER,
             phase: GamePhase::PlayerTurn,
             bid_history: Vec::new(),
             current_bid: None,
             current_turn: Player::Human,
+            current_round: 1,
+            max_rounds: MAX_ROUNDS,
+            human_wins: 0,
+            ai_wins: 0,
+            last_round_result: None,
         };
         state.roll_all_dice();
         state
@@ -107,9 +113,9 @@ impl GameState {
             .collect();
         self.bid_history.clear();
         self.current_bid = None;
+        self.last_round_result = None;
     }
 
-    /// 生成前端可见的视图（隐藏 AI 骰子）
     pub fn to_view(&self) -> GameView {
         GameView {
             phase: self.phase.clone(),
@@ -118,10 +124,14 @@ impl GameState {
             human_dice_count: self.human_dice_count,
             bid_history: self.bid_history.clone(),
             current_bid: self.current_bid.clone(),
+            current_round: self.current_round,
+            max_rounds: self.max_rounds,
+            human_wins: self.human_wins,
+            ai_wins: self.ai_wins,
+            last_round_result: self.last_round_result.clone(),
         }
     }
 
-    /// 统计所有骰子中某个点数的总数
     pub fn count_face(&self, face: u32) -> u32 {
         let human_count = self.human_dice.iter().filter(|&&d| d == face).count() as u32;
         let ai_count = self.ai_dice.iter().filter(|&&d| d == face).count() as u32;
@@ -175,8 +185,12 @@ mod tests {
         assert_eq!(state.ai_dice.len(), 5);
         assert_eq!(state.human_dice_count, 5);
         assert_eq!(state.ai_dice_count, 5);
-        assert!(state.human_dice.iter().all(|&d| d >= 1 && d <= 6));
-        assert!(state.ai_dice.iter().all(|&d| d >= 1 && d <= 6));
+        assert_eq!(state.current_round, 1);
+        assert_eq!(state.max_rounds, 5);
+        assert_eq!(state.human_wins, 0);
+        assert_eq!(state.ai_wins, 0);
+        assert!(state.human_dice.iter().all(|&d| (1..=6).contains(&d)));
+        assert!(state.ai_dice.iter().all(|&d| (1..=6).contains(&d)));
     }
 
     #[test]
@@ -195,7 +209,8 @@ mod tests {
         let state = GameState::new();
         let view = state.to_view();
         assert_eq!(view.human_dice.len(), 5);
-        // view 不应包含 ai_dice 的具体值
         assert_eq!(view.ai_dice_count, 5);
+        assert_eq!(view.current_round, 1);
+        assert_eq!(view.max_rounds, 5);
     }
 }

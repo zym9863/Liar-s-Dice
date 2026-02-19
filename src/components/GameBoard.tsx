@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
-import type { GameView, RoundResult, Player } from "../types";
-import { startGame, playerBid, playerChallenge, nextRound } from "../api";
-import DiceView from "./DiceView";
-import BidPanel from "./BidPanel";
+import { useCallback, useEffect, useState } from "react";
+import type { GameView, Player, RoundResult } from "../types";
+import { nextRound, playerBid, playerChallenge, startGame } from "../api";
 import BidHistory from "./BidHistory";
-import ScoreBoard from "./ScoreBoard";
+import BidPanel from "./BidPanel";
+import DiceView from "./DiceView";
 import ResultModal from "./ResultModal";
+import ScoreBoard from "./ScoreBoard";
 
 export default function GameBoard() {
   const [gameView, setGameView] = useState<GameView | null>(null);
@@ -70,13 +70,12 @@ export default function GameBoard() {
 
   if (!gameView) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">
-        加载中...
+      <div className="flex min-h-screen items-center justify-center bg-gray-900 text-white">
+        Loading...
       </div>
     );
   }
 
-  // 解析游戏阶段
   let roundResult: RoundResult | null = null;
   let gameOverWinner: { winner: Player } | null = null;
   let isPlayerTurn = false;
@@ -87,60 +86,50 @@ export default function GameBoard() {
     roundResult = gameView.phase.RoundOver;
   } else if ("GameOver" in gameView.phase) {
     gameOverWinner = gameView.phase.GameOver;
+    roundResult = gameView.last_round_result;
   }
 
   const totalDice = gameView.human_dice_count + gameView.ai_dice_count;
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
-      {/* 标题 */}
-      <header className="text-center py-4">
-        <h1 className="text-2xl font-bold text-amber-400">大话骰</h1>
+    <div className="flex min-h-screen flex-col bg-gray-900 text-white">
+      <header className="py-4 text-center">
+        <h1 className="text-2xl font-bold text-amber-400">Liar&apos;s Dice</h1>
       </header>
 
-      {/* 计分板 */}
       <div className="px-4">
         <ScoreBoard
-          humanDice={gameView.human_dice_count}
-          aiDice={gameView.ai_dice_count}
+          currentRound={gameView.current_round}
+          maxRounds={gameView.max_rounds}
+          humanWins={gameView.human_wins}
+          aiWins={gameView.ai_wins}
         />
       </div>
 
-      {/* 游戏区域 */}
-      <div className="flex-1 flex flex-col justify-center gap-6 px-4 py-4">
-        {/* AI 骰子（隐藏） */}
-        <DiceView
-          dice={[]}
-          hidden
-          count={gameView.ai_dice_count}
-          label="AI 的骰子"
-        />
-
-        {/* 叫数历史 */}
+      <div className="flex flex-1 flex-col justify-center gap-6 px-4 py-4">
+        <DiceView dice={[]} hidden count={gameView.ai_dice_count} label="AI dice" />
         <BidHistory history={gameView.bid_history} />
-
-        {/* 玩家骰子 */}
-        <DiceView dice={gameView.human_dice} label="你的骰子" />
+        <DiceView dice={gameView.human_dice} label="Your dice" />
       </div>
 
-      {/* 操作面板 */}
       <div className="px-4 pb-4">
-        {error && (
-          <div className="text-red-400 text-sm text-center mb-2">{error}</div>
-        )}
+        {error && <div className="mb-2 text-center text-sm text-red-400">{error}</div>}
         <BidPanel
           currentBid={gameView.current_bid}
           totalDice={totalDice}
           onBid={handleBid}
           onChallenge={handleChallenge}
-          disabled={!isPlayerTurn || loading}
+          disabled={!isPlayerTurn || loading || gameOverWinner !== null}
         />
       </div>
 
-      {/* 结果弹窗 */}
       <ResultModal
         result={roundResult}
         gameOver={gameOverWinner}
+        currentRound={gameView.current_round}
+        maxRounds={gameView.max_rounds}
+        humanWins={gameView.human_wins}
+        aiWins={gameView.ai_wins}
         onNextRound={handleNextRound}
         onNewGame={handleStartGame}
       />

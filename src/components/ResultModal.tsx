@@ -1,9 +1,13 @@
-import type { RoundResult, Player } from "../types";
+import type { Player, RoundResult } from "../types";
 import DiceView from "./DiceView";
 
 interface ResultModalProps {
   result: RoundResult | null;
   gameOver: { winner: Player } | null;
+  currentRound: number;
+  maxRounds: number;
+  humanWins: number;
+  aiWins: number;
   onNextRound: () => void;
   onNewGame: () => void;
 }
@@ -11,6 +15,10 @@ interface ResultModalProps {
 export default function ResultModal({
   result,
   gameOver,
+  currentRound,
+  maxRounds,
+  humanWins,
+  aiWins,
   onNextRound,
   onNewGame,
 }: ResultModalProps) {
@@ -19,54 +27,63 @@ export default function ResultModal({
   const isGameOver = gameOver !== null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="mx-4 w-full max-w-md rounded-2xl bg-gray-800 p-6 shadow-2xl">
+        <h2 className="mb-2 text-center text-xl font-bold">
+          {result ? (
+            <span className={result.winner === "Human" ? "text-green-400" : "text-red-400"}>
+              Round {result.round}: {result.winner === "Human" ? "You win" : "AI wins"}
+            </span>
+          ) : null}
+        </h2>
+
+        {result ? (
+          <div className="mb-4 text-center text-sm text-gray-400">
+            Bid: {result.last_bid.count} x face {result.last_bid.face}
+            <br />
+            Actual count: {result.actual_count}
+          </div>
+        ) : null}
+
+        {result ? (
+          <div className="mb-4 flex flex-col gap-3">
+            <DiceView dice={result.human_dice} label="Your dice" />
+            <DiceView dice={result.ai_dice} label="AI dice" />
+          </div>
+        ) : null}
+
+        <div className="mb-4 rounded-lg bg-gray-900/70 p-3 text-center">
+          <div className="text-sm text-gray-400">
+            Match score ({currentRound}/{maxRounds})
+          </div>
+          <div className="mt-1 text-lg font-semibold text-white">
+            You {humanWins} : {aiWins} AI
+          </div>
+        </div>
+
         {isGameOver ? (
           <>
-            <h2 className="text-2xl font-bold text-center mb-4">
-              {gameOver!.winner === "Human" ? (
-                <span className="text-amber-400">你赢了！</span>
+            <div className="mb-4 text-center text-lg font-bold">
+              {gameOver.winner === "Human" ? (
+                <span className="text-amber-400">Match winner: You</span>
               ) : (
-                <span className="text-gray-400">AI 获胜</span>
+                <span className="text-gray-300">Match winner: AI</span>
               )}
-            </h2>
+            </div>
             <button
-              className="w-full py-3 bg-amber-500 text-white rounded-lg font-semibold hover:bg-amber-400 transition-colors"
+              className="w-full rounded-lg bg-amber-500 py-3 font-semibold text-white transition-colors hover:bg-amber-400"
               onClick={onNewGame}
             >
-              再来一局
+              New Match
             </button>
           </>
         ) : (
-          result && (
-            <>
-              <h2 className="text-xl font-bold text-center mb-2">
-                {result.winner === "Human" ? (
-                  <span className="text-green-400">你赢了这轮！</span>
-                ) : (
-                  <span className="text-red-400">AI 赢了这轮</span>
-                )}
-              </h2>
-
-              <div className="text-center text-sm text-gray-400 mb-4">
-                叫数：{result.last_bid.count} 个 {result.last_bid.face} 点
-                <br />
-                实际：{result.actual_count} 个 {result.last_bid.face} 点
-              </div>
-
-              <div className="flex flex-col gap-3 mb-4">
-                <DiceView dice={result.human_dice} label="你的骰子" />
-                <DiceView dice={result.ai_dice} label="AI 的骰子" />
-              </div>
-
-              <button
-                className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-500 transition-colors"
-                onClick={onNextRound}
-              >
-                下一轮
-              </button>
-            </>
-          )
+          <button
+            className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition-colors hover:bg-blue-500"
+            onClick={onNextRound}
+          >
+            Start Round {Math.min(currentRound + 1, maxRounds)}
+          </button>
         )}
       </div>
     </div>

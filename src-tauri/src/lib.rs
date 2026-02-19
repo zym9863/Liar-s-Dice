@@ -1,5 +1,5 @@
-mod game;
 mod commands;
+mod game;
 
 use commands::AppState;
 use game::engine::GameEngine;

@@ -1,37 +1,36 @@
 interface ScoreBoardProps {
-  humanDice: number;
-  aiDice: number;
+  currentRound: number;
+  maxRounds: number;
+  humanWins: number;
+  aiWins: number;
 }
 
-export default function ScoreBoard({ humanDice, aiDice }: ScoreBoardProps) {
+export default function ScoreBoard({
+  currentRound,
+  maxRounds,
+  humanWins,
+  aiWins,
+}: ScoreBoardProps) {
   return (
-    <div className="flex justify-between items-center px-4 py-2 bg-gray-800/50 rounded-lg">
-      <div className="flex items-center gap-2">
-        <span className="text-blue-400 font-semibold">你</span>
-        <div className="flex gap-0.5">
-          {Array.from({ length: 5 }, (_, i) => (
-            <div
-              key={i}
-              className={`w-3 h-3 rounded-full ${
-                i < humanDice ? "bg-blue-400" : "bg-gray-600"
-              }`}
-            />
-          ))}
-        </div>
+    <div className="rounded-lg bg-gray-800/50 px-4 py-3">
+      <div className="mb-2 flex items-center justify-between text-sm text-gray-300">
+        <span>Round {currentRound}/{maxRounds}</span>
+        <span>First to most wins after {maxRounds} rounds</span>
       </div>
-      <span className="text-gray-500 text-sm">VS</span>
-      <div className="flex items-center gap-2">
-        <div className="flex gap-0.5">
-          {Array.from({ length: 5 }, (_, i) => (
-            <div
-              key={i}
-              className={`w-3 h-3 rounded-full ${
-                i < aiDice ? "bg-red-400" : "bg-gray-600"
-              }`}
-            />
-          ))}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-blue-400">You</span>
+          <span className="rounded bg-blue-500/20 px-2 py-1 font-mono text-blue-300">
+            {humanWins}
+          </span>
         </div>
-        <span className="text-red-400 font-semibold">AI</span>
+        <span className="text-sm text-gray-500">VS</span>
+        <div className="flex items-center gap-2">
+          <span className="rounded bg-red-500/20 px-2 py-1 font-mono text-red-300">
+            {aiWins}
+          </span>
+          <span className="font-semibold text-red-400">AI</span>
+        </div>
       </div>
     </div>
   );
