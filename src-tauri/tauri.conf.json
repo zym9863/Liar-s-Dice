@@ -12,9 +12,9 @@
   "app": {
     "windows": [
       {
-        "title": "liar-dice",
-        "width": 800,
-        "height": 600
+        "title": "大话骰",
+        "width": 420,
+        "height": 720
       }
     ],
     "security": {
