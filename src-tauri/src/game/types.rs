@@ -105,15 +105,50 @@ impl GameState {
 
     pub fn roll_all_dice(&mut self) {
         let mut rng = rand::thread_rng();
-        self.human_dice = (0..self.human_dice_count)
-            .map(|_| rng.gen_range(1..=6))
-            .collect();
-        self.ai_dice = (0..self.ai_dice_count)
-            .map(|_| rng.gen_range(1..=6))
-            .collect();
+        self.human_dice = Self::roll_dice_with_auto_reroll(&mut rng, self.human_dice_count);
+        self.ai_dice = Self::roll_dice_with_auto_reroll(&mut rng, self.ai_dice_count);
         self.bid_history.clear();
         self.current_bid = None;
         self.last_round_result = None;
+    }
+
+    fn roll_dice_with_auto_reroll(rng: &mut impl Rng, count: u32) -> Vec<u32> {
+        Self::roll_dice_with_auto_reroll_using(count, || {
+            (0..count).map(|_| rng.gen_range(1..=6)).collect()
+        })
+    }
+
+    fn roll_dice_with_auto_reroll_using<F>(count: u32, mut roll_once: F) -> Vec<u32>
+    where
+        F: FnMut() -> Vec<u32>,
+    {
+        loop {
+            let rolled = roll_once();
+            if count != MAX_DICE_PER_PLAYER || !Self::has_five_distinct(&rolled) {
+                return rolled;
+            }
+        }
+    }
+
+    fn has_five_distinct(dice: &[u32]) -> bool {
+        if dice.len() != MAX_DICE_PER_PLAYER as usize {
+            return false;
+        }
+
+        let mut seen = [false; 7];
+        for &value in dice {
+            if !(1..=6).contains(&value) {
+                return false;
+            }
+
+            let index = value as usize;
+            if seen[index] {
+                return false;
+            }
+            seen[index] = true;
+        }
+
+        true
     }
 
     pub fn to_view(&self) -> GameView {
@@ -212,5 +247,48 @@ mod tests {
         assert_eq!(view.ai_dice_count, 5);
         assert_eq!(view.current_round, 1);
         assert_eq!(view.max_rounds, 5);
+    }
+
+    #[test]
+    fn test_has_five_distinct_true() {
+        assert!(GameState::has_five_distinct(&[1, 2, 3, 4, 5]));
+    }
+
+    #[test]
+    fn test_has_five_distinct_false_with_duplicate() {
+        assert!(!GameState::has_five_distinct(&[1, 2, 2, 4, 5]));
+    }
+
+    #[test]
+    fn test_has_five_distinct_false_non_five_len() {
+        assert!(!GameState::has_five_distinct(&[1, 2, 3, 4]));
+    }
+
+    #[test]
+    fn test_roll_dice_with_auto_reroll_until_not_distinct() {
+        let mut call_count = 0;
+        let rolled = GameState::roll_dice_with_auto_reroll_using(5, || {
+            call_count += 1;
+            if call_count == 1 {
+                vec![1, 2, 3, 4, 5]
+            } else {
+                vec![1, 1, 3, 4, 5]
+            }
+        });
+
+        assert_eq!(call_count, 2);
+        assert_eq!(rolled, vec![1, 1, 3, 4, 5]);
+    }
+
+    #[test]
+    fn test_roll_dice_with_auto_reroll_no_reroll_when_not_five_dice() {
+        let mut call_count = 0;
+        let rolled = GameState::roll_dice_with_auto_reroll_using(4, || {
+            call_count += 1;
+            vec![1, 2, 3, 4]
+        });
+
+        assert_eq!(call_count, 1);
+        assert_eq!(rolled, vec![1, 2, 3, 4]);
     }
 }
