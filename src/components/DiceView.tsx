@@ -14,10 +14,13 @@ const dotPositions: Record<number, [number, number][]> = {
   6: [[25, 25], [75, 25], [25, 50], [75, 50], [25, 75], [75, 75]],
 };
 
-function Die({ value, hidden }: { value: number; hidden?: boolean }) {
+function Die({ value, hidden, index }: { value: number; hidden?: boolean; index: number }) {
   if (hidden) {
     return (
-      <div className="w-14 h-14 bg-gray-600 rounded-lg border-2 border-gray-500 flex items-center justify-center text-gray-400 text-xl font-bold shadow-md">
+      <div
+        className="die-base die-hidden flex items-center justify-center"
+        style={{ animationDelay: `${index * 45}ms` }}
+      >
         ?
       </div>
     );
@@ -25,11 +28,11 @@ function Die({ value, hidden }: { value: number; hidden?: boolean }) {
 
   const dots = dotPositions[value] || [];
   return (
-    <div className="w-14 h-14 bg-white rounded-lg border-2 border-gray-300 relative shadow-md">
+    <div className="die-base" style={{ animationDelay: `${index * 45}ms` }}>
       {dots.map(([x, y], i) => (
         <div
           key={i}
-          className="w-2.5 h-2.5 bg-gray-800 rounded-full absolute"
+          className="die-dot"
           style={{
             left: `${x}%`,
             top: `${y}%`,
@@ -42,16 +45,14 @@ function Die({ value, hidden }: { value: number; hidden?: boolean }) {
 }
 
 export default function DiceView({ dice, hidden, label, count }: DiceViewProps) {
-  const displayDice = hidden
-    ? Array.from({ length: count ?? 0 }, (_, i) => i + 1)
-    : dice;
+  const displayDice = hidden ? Array.from({ length: count ?? 0 }, (_, i) => i + 1) : dice;
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <span className="text-sm font-semibold text-gray-300">{label}</span>
-      <div className="flex gap-2 flex-wrap justify-center">
+    <div className="flex flex-col items-center gap-3">
+      <span className="section-label text-center">{label}</span>
+      <div className="flex flex-wrap justify-center gap-2.5">
         {displayDice.map((value, index) => (
-          <Die key={index} value={value} hidden={hidden} />
+          <Die key={index} value={value} hidden={hidden} index={index} />
         ))}
       </div>
     </div>
